@@ -68,6 +68,12 @@ fn main() {
         &TextureSettings::new()
     ).unwrap();
 
+    let mut normalized_gradient_tex = Texture::from_image(
+        &mut texture_context,
+        &img,
+        &TextureSettings::new()
+    ).unwrap();
+
     let (tx, rx) = channel();
 
     let join_handle = thread::spawn(move || {
@@ -101,6 +107,7 @@ fn main() {
         while let Ok(distance) = rx.try_recv() {
             gray_tex.update(&mut texture_context, &array_utilities::array2_to_image(&distance)).unwrap();
             gradient_tex.update(&mut texture_context, &array_utilities::array2_gradients_image(&distance)).unwrap();
+            normalized_gradient_tex.update(&mut texture_context, &array_utilities::array2_gradient_orientation_image(&distance)).unwrap();
             texture_context.encoder.flush(&mut window.device);
         }
 
@@ -113,6 +120,8 @@ fn main() {
             pimage(&gray_tex, tf.trans(img_width as f64,0.0), g);
 
             pimage(&gradient_tex, tf.trans(img_width as f64, img_height as f64), g);
+
+            pimage(&normalized_gradient_tex, tf.trans(0.0, img_height as f64), g);
 
         });
     }

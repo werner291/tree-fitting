@@ -3,6 +3,7 @@ use std::f32::INFINITY;
 use image::{Rgba, RgbaImage};
 use ndarray::Array2;
 use ndarray_stats::QuantileExt;
+use nalgebra::Vector2;
 
 fn central_gradient_x(field: &Array2<f32>) -> Array2<f32> {
     let mut res: Array2<f32> = Array2::zeros(field.dim());
@@ -92,6 +93,32 @@ pub(crate) fn array2_gradients_image(distance: &Array2<f32>) -> RgbaImage {
         Rgba([
             res_x[[x as usize,y as usize]] as u8,
             res_y[[x as usize,y as usize]] as u8,
+            0,
+            255
+        ])
+    })
+}
+
+pub fn array2_gradient_orientation_image(distance: &Array2<f32>) -> RgbaImage {
+
+    let distance_without_inf = distance.mapv(|x| {
+        if x == INFINITY {
+            0.0
+        } else {
+            x
+        }
+    });
+
+    let res_x = central_gradient_x(&distance_without_inf);
+    let res_y = central_gradient_y(&distance_without_inf);
+
+    RgbaImage::from_fn(distance.shape()[0] as u32, distance.shape()[1] as u32, |x,y| {
+
+        let normalized = Vector2::new(res_x[[x as usize,y as usize]], res_y[[x as usize,y as usize]]).normalize();
+
+        Rgba([
+            ((normalized.x + 1.0) * 127.5) as u8,
+            ((normalized.y + 1.0) * 127.5) as u8,
             0,
             255
         ])
