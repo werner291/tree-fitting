@@ -114,9 +114,7 @@ impl<'a> DijkstraApproach<'a> {
                 let [r2, g2, b2, a2] = self.image.get_pixel(x2 as u32, y2 as u32).0;
 
                 // Manhattan distance between color values is the edge traversal cost.
-                let distance = (r as f32 - r2 as f32).abs() +
-                    (g as f32 - g2 as f32).abs() +
-                    (b as f32 - b2 as f32).abs();
+                let distance = (r as f32 - r2 as f32).abs() + (g as f32 - g2 as f32).abs() + (b as f32 - b2 as f32).abs();
 
                 // Cost to visit neighbour if coming from current point.
                 let candidate_cost = self.state[[x as usize, y as usize]] + distance;
