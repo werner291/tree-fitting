@@ -8,12 +8,10 @@
 use std::cmp::{Eq, Ord, Ordering};
 use std::collections::BinaryHeap;
 use std::f32::INFINITY;
-use std::option::Option::Some;
 
 use image::RgbaImage;
-use ndarray::Array2;
 use nalgebra::Point2;
-use std::convert::Into;
+use ndarray::Array2;
 
 /// A point on the exploration boundary.
 ///
@@ -22,13 +20,11 @@ use std::convert::Into;
 /// `Ord` is implemented such that the point with lowest cost is maximum (highest priority)
 #[derive(PartialEq, PartialOrd)]
 struct FrontierPoint {
-    at: [usize;2],
-    cost: f32
+    at: [usize; 2],
+    cost: f32,
 }
 
-impl Eq for FrontierPoint {
-
-}
+impl Eq for FrontierPoint {}
 
 impl Ord for FrontierPoint {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -46,33 +42,32 @@ impl Ord for FrontierPoint {
 pub struct DijkstraApproach<'a> {
     state: Array2<f32>,
     queue: BinaryHeap<FrontierPoint>,
-    image: &'a RgbaImage
+    image: &'a RgbaImage,
 }
 
 pub enum StepResult<'a> {
     Done(Array2<f32>),
-    NotDone(DijkstraApproach<'a>)
+    NotDone(DijkstraApproach<'a>),
 }
 
 impl<'a> DijkstraApproach<'a> {
-
     /// Initialize the algorithm with an image and origin point.
     pub fn new(image: &'a RgbaImage, origin_point: Point2<u32>) -> Self {
-
         let mut queue = BinaryHeap::new();
 
-        let mut state = Array2::from_elem([image.width() as usize, image.height() as usize], INFINITY);
+        let mut state =
+            Array2::from_elem([image.width() as usize, image.height() as usize], INFINITY);
         state[[origin_point.x as usize, origin_point.y as usize]] = 0.0;
 
         queue.push(FrontierPoint {
             at: [origin_point.x as usize, origin_point.y as usize],
-            cost: 0.0
+            cost: 0.0,
         });
 
         DijkstraApproach {
             state,
             queue,
-            image
+            image,
         }
     }
 
@@ -81,40 +76,43 @@ impl<'a> DijkstraApproach<'a> {
     /// This method takes ownership of the state, and either returns the state after the iteration,
     /// or returns the result if the algorithm has terminated.
     pub fn step(mut self) -> StepResult<'a> {
-
         // Pop the current point with lowest cost (highest priority) from the queue.
-        let FrontierPoint { at: [x,y], cost } = self.queue.pop()
+        let FrontierPoint { at: [x, y], cost } = self
+            .queue
+            .pop()
             .expect("Algorithm should always have non-empty queue.");
 
         // Skip this point if a better cost has been found on a previous iteration.
-        if cost <= self.state[[x as usize,y as usize]] {
-
+        if cost <= self.state[[x as usize, y as usize]] {
             // Establish neighbour coordinates.
             let neighbours = [
-                [ x as i32 - 1, y as i32],
-                [ x as i32 + 1, y as i32],
-                [ x as i32, y as i32 - 1],
-                [ x as i32, y as i32 + 1]];
+                [x as i32 - 1, y as i32],
+                [x as i32 + 1, y as i32],
+                [x as i32, y as i32 - 1],
+                [x as i32, y as i32 + 1],
+            ];
 
             // Copy the pixel from the original image.
-            let [r, g, b, a] = self.image.get_pixel(x as u32, y as u32).0;
+            let [r, g, b, _a] = self.image.get_pixel(x as u32, y as u32).0;
 
             // Explore all neighbours.
             for [x2, y2] in neighbours.iter().cloned() {
-
                 // Skip the neighbour if it is out of bounds
-                if x2 == -1 ||
-                    y2 == -1 ||
-                    x2 == self.image.width() as i32 ||
-                    y2 == self.image.height() as i32 {
+                if x2 == -1
+                    || y2 == -1
+                    || x2 == self.image.width() as i32
+                    || y2 == self.image.height() as i32
+                {
                     continue;
                 }
 
                 // Extract the pixel.
-                let [r2, g2, b2, a2] = self.image.get_pixel(x2 as u32, y2 as u32).0;
+                let [r2, g2, b2, _a2] = self.image.get_pixel(x2 as u32, y2 as u32).0;
 
                 // Manhattan distance between color values is the edge traversal cost.
-                let distance = (r as f32 - r2 as f32).abs() + (g as f32 - g2 as f32).abs() + (b as f32 - b2 as f32).abs();
+                let distance = (r as f32 - r2 as f32).abs()
+                    + (g as f32 - g2 as f32).abs()
+                    + (b as f32 - b2 as f32).abs();
 
                 // Cost to visit neighbour if coming from current point.
                 let candidate_cost = self.state[[x as usize, y as usize]] + distance;
@@ -124,8 +122,8 @@ impl<'a> DijkstraApproach<'a> {
                     self.state[[x2 as usize, y2 as usize]] = candidate_cost;
                     // Store as future point in the queue.
                     self.queue.push(FrontierPoint {
-                        at: [x2  as usize, y2 as usize],
-                        cost: self.state[[x, y]] + distance
+                        at: [x2 as usize, y2 as usize],
+                        cost: self.state[[x, y]] + distance,
                     })
                 }
             }
